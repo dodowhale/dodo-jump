@@ -655,7 +655,8 @@ export class Game {
                 // If Event Horizon active, pull platforms horizontally to center (X = 240)
                 if (this.eventHorizonTimer > 0) {
                     const targetX = 240 - plat.width / 2;
-                    plat.x += (targetX - plat.x) * 0.15; // Smooth slide to middle
+                    const pullFactor = 1 - Math.exp(-10 * dt);
+                    plat.x += (targetX - plat.x) * pullFactor; // Smooth slide to middle (frame-rate independent)
                 } else {
                     const timeFactor = (timestamp / 1000) * (plat.speed / 150) + plat.offset;
                     plat.x = plat.originX + Math.sin(timeFactor) * plat.range;
@@ -685,8 +686,11 @@ export class Game {
                 const dy = cy - this.player.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 
-                // Neon Orb has 120px range, other skins have 40px range
-                const magnetRange = this.activeCharacter === 'neon_orb' ? 120 : 40;
+                // Neon Orb has 120px range, other skins have 40px range. Fever mode boosts range to 240px.
+                let magnetRange = this.activeCharacter === 'neon_orb' ? 120 : 40;
+                if (this.feverTimer > 0) {
+                    magnetRange = 240;
+                }
                 
                 if (dist < magnetRange) {
                     // Detach from platform and convert to floating crystal
@@ -721,8 +725,10 @@ export class Game {
 
         // Player physics
         if (!this.player.onPlatform) {
-            // Apply gravity
-            this.player.vy += this.gravity * dt;
+            const prevY = this.player.y;
+            // Apply gravity (gravity is reduced by 60% during Fever Mode for cosmic high floaty feel)
+            const currentGravity = this.feverTimer > 0 ? this.gravity * 0.4 : this.gravity;
+            this.player.vy += currentGravity * dt;
             this.player.y += this.player.vy * dt;
 
             // Trail
@@ -732,27 +738,41 @@ export class Game {
             }
 
             if (this.player.vy < 0) {
-                this.checkCollisions();
+                this.checkCollisions(prevY);
             }
         } else {
-            this.player.x = this.player.onPlatform.x + this.player.platformOffset;
+            const plat = this.player.onPlatform;
+            this.player.x = plat.x + this.player.platformOffset;
             
             if (this.player.x < this.player.radius) {
                 this.player.x = this.player.radius;
-                this.player.platformOffset = this.player.x - this.player.onPlatform.x;
+                this.player.platformOffset = this.player.x - plat.x;
             } else if (this.player.x > this.width - this.player.radius) {
                 this.player.x = this.width - this.player.radius;
-                this.player.platformOffset = this.player.x - this.player.onPlatform.x;
+                this.player.platformOffset = this.player.x - plat.x;
             }
 
-            this.player.y = this.player.onPlatform.y + this.player.onPlatform.height / 2 + this.player.radius;
-            this.player.vy = 0;
-            this.player.trail = [];
+            // Fall-off check: If player is pushed off the platform by the screen boundary
+            if (this.player.platformOffset < -this.player.radius || this.player.platformOffset > plat.width + this.player.radius) {
+                this.player.onPlatform = null;
+                this.player.vy = -50; // Start falling gently
+            } else {
+                this.player.y = plat.y + plat.height / 2 + this.player.radius;
+                this.player.vy = 0;
+                this.player.trail = [];
+            }
         }
 
         // Fall check
         if (this.player.y < this.camera.y - 80) {
-            if (this.isShieldActive) {
+            if (this.feverTimer > 0) {
+                // Fever Rescue: Auto spring back up if player falls during Fever mode
+                this.player.vy = this.maxJumpVelocity * 1.3;
+                this.player.onPlatform = null;
+                const sy = this.height - (this.player.y - this.camera.y);
+                this.createFloatingText(this.player.x, sy - 20, 'FEVER RESCUE! ✨', '#ff9f43');
+                this.createBlastParticles(this.player.x, this.player.y, 20, '#ff9f43');
+            } else if (this.isShieldActive) {
                 this.isShieldActive = false;
                 this.triggerShieldRescue();
             } else {
@@ -766,7 +786,9 @@ export class Game {
             this.camera.targetY = targetCameraHeight;
         }
         
-        this.camera.y += (this.camera.targetY - this.camera.y) * this.camera.scrollSpeed;
+        // Frame-rate independent camera interpolation
+        const cameraFactor = 1 - Math.exp(-6.5 * dt);
+        this.camera.y += (this.camera.targetY - this.camera.y) * cameraFactor;
 
         // Platform generation triggers
         const highestPlatform = this.platforms[this.platforms.length - 1];
@@ -813,10 +835,13 @@ export class Game {
         );
     }
 
-    private checkCollisions() {
+    private checkCollisions(prevY: number) {
         const px = this.player.x;
         const py = this.player.y;
         const r = this.player.radius;
+
+        const prevPlayerBottom = prevY - r;
+        const currentPlayerBottom = py - r;
 
         for (let i = 0; i < this.platforms.length; i++) {
             const plat = this.platforms[i]!;
@@ -824,10 +849,9 @@ export class Game {
             if (plat.type === 'phantom' && plat.opacity <= 0) continue;
 
             const platTop = plat.y + plat.height / 2;
-            const platBottom = plat.y - plat.height / 2;
-            const playerBottom = py - r;
             
-            if (playerBottom <= platTop && playerBottom >= platBottom - 12) {
+            // CCD (Continuous Collision Detection): Checks if player's bottom edge crossed platform top edge this frame.
+            if (prevPlayerBottom >= platTop - 2 && currentPlayerBottom <= platTop + 2) {
                 if (px + r >= plat.x && px - r <= plat.x + plat.width) {
                     this.landOnPlatform(plat);
                     break;
@@ -924,6 +948,10 @@ export class Game {
         audio.playScore();
         this.createFloatingText(this.player.x, this.height - (this.player.y - this.camera.y) - 50, '🔥 FEVER TIME ACTIVATED! 🔥', '#ff9f43');
         this.createBlastParticles(this.player.x, this.player.y, 35, '#ff9f43');
+
+        // Launch player upward upon Fever activation
+        this.player.vy = this.maxJumpVelocity * 1.5;
+        this.player.onPlatform = null;
     }
 
     private triggerGameOver() {
