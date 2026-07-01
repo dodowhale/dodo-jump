@@ -119,6 +119,8 @@ dodo-jump/
 
 ---
 
-## 📜 라이선스 및 기여 (License & Contribution)
+## 📜 라이선스 및 기여 (License & Development Guide)
 
-이 프로젝트는 오픈소스로 배포되며 자유롭게 수정 및 배포할 수 있습니다. 기여를 희망하시는 경우 Issues 또는 Pull Requests를 제출해 주세요. 에이전트 지침인 [.agents/AGENTS.md](file:///Users/east/work/dodo-jump/.agents/AGENTS.md)을 준수하며 일관된 코딩 스타일을 유지해 주시기 바랍니다.
+본 프로젝트는 비공개 독점 소프트웨어(Proprietary Software)로, 무단 복제, 배포 및 상업적 이용을 금지합니다.
+개발 및 코드 기여 시 에이전트 지침인 [.agents/AGENTS.md](file:///Users/east/work/dodo-jump/.agents/AGENTS.md)을 엄격히 준수하며 일관된 코딩 스타일을 유지해야 합니다.
+
