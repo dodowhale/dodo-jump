@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Lumina Jump - Cosmic Timing Climber</title>
+    <!-- PWA Settings -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="./assets/pwa_icon_192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./assets/pwa_icon_512.png">
+    <link rel="apple-touch-icon" href="./assets/pwa_icon_192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="./assets/pwa_icon_512.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="LuminaJump">
+    <meta name="theme-color" content="#00f2fe">
+    
+    <!-- Synthwave / Cosmic Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        html, body { 
+            margin: 0; 
+            padding: 0; 
+            width: 100%;
+            height: 100%;
+            overflow: hidden; 
+            position: fixed; /* prevent iOS/Android bounce */
+            background: #020008; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-family: 'Outfit', 'Nunito', 'Fredoka', sans-serif; 
+            overscroll-behavior: none; 
+            touch-action: none; 
+        }
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="./dist/index.js"></script>
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('PWA Service Worker registered:', reg.scope))
+                    .catch(err => console.log('PWA Service Worker failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
