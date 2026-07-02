@@ -232,14 +232,16 @@ const App = () => {
             <div class="ambient-glow" />
 
             <div style={{ 
-                position: 'relative', 
+                position: 'absolute', 
+                top: '50%',
+                left: '50%',
                 width: '480px', 
                 height: '720px', 
                 overflow: 'hidden', 
                 'border-radius': '24px', 
                 'border': '4px solid rgba(0, 242, 254, 0.25)', 
                 'box-shadow': '0 24px 64px rgba(0, 0, 0, 0.75), 0 0 35px rgba(0, 242, 254, 0.15)',
-                'transform': `scale(${scale()})`,
+                'transform': `translate(-50%, -50%) scale(${scale()})`,
                 'transform-origin': 'center',
                 'transition': 'transform 0.1s ease-out',
                 'background': '#020008'
