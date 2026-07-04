@@ -5,7 +5,9 @@ const ASSETS_TO_CACHE = [
   './dist/index.js',
   './manifest.json',
   './assets/pwa_icon_192.png',
-  './assets/pwa_icon_512.png'
+  './assets/pwa_icon_512.png',
+  './public/favicon.svg',
+  './public/icons.svg'
 ];
 
 // Pre-cache core assets

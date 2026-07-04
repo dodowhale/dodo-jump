@@ -188,7 +188,6 @@ export class Game {
     
     // Skill cooldown status
     private skillCdTimer = 0; // remaining ms
-    private lastSkillTriggerTime = 0;
 
     // Active status effects
     private isShieldActive = false;
@@ -372,7 +371,6 @@ export class Game {
 
         if (triggered) {
             this.skillCdTimer = char.cooldown;
-            this.lastSkillTriggerTime = performance.now();
             this.onSkillCdChange(this.skillCdTimer, char.cooldown);
         }
     }

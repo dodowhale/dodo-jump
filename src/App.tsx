@@ -131,6 +131,11 @@ const App = () => {
         }
     };
 
+    const handleBeforeInstallPrompt = (e: Event) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+    };
+
     onMount(() => {
         // Sanity check
         const currentActive = localStorage.getItem('lumina_active_character') || 'neon_orb';
@@ -145,10 +150,7 @@ const App = () => {
         window.addEventListener('resize', updateScale);
 
         // Listen for PWA installation prompt
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            setDeferredPrompt(e);
-        });
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
         if (canvasRef) {
             const game = new Game(
@@ -189,6 +191,7 @@ const App = () => {
             onCleanup(() => {
                 game.stop();
                 window.removeEventListener('resize', updateScale);
+                window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
             });
         }
     });
@@ -454,7 +457,7 @@ const App = () => {
                                         height: '56px',
                                         'border-radius': '50%',
                                         'border': '2.5px solid rgba(0,0,0,0.5)',
-                                        'background': 'rgba(0, 0, 0, 0.65)',
+                                        'background': `conic-gradient(rgba(0, 0, 0, 0.8) ${ (skillCdRemaining() / Math.max(1, skillCdDuration())) * 360 }deg, rgba(0, 0, 0, 0.2) 0deg)`,
                                         'color': 'white',
                                         'display': 'flex',
                                         'justify-content': 'center',

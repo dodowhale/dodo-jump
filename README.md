@@ -79,7 +79,7 @@ bun install
 ```bash
 bun run dev
 ```
-개발 모드가 시작되면 브라우저에서 `http://localhost:5173`을 열어 실시간 핫 리로딩(HMR) 기능이 포함된 게임을 플레이할 수 있습니다.
+개발 모드가 시작되면 브라우저에서 `http://localhost:3001`을 열어 실시간 핫 리로딩(HMR) 기능이 포함된 게임을 플레이할 수 있습니다.
 
 ### 3. 배포용 빌드
 ```bash
@@ -91,7 +91,7 @@ bun run build
 ```bash
 bun run start
 ```
-Hono 웹 서버가 시작되며 기본 `http://localhost:3000`에서 운영 환경의 게임 서비스를 제공합니다.
+Hono 웹 서버가 시작되며 기본 `http://localhost:3001`에서 운영 환경의 게임 서비스를 제공합니다.
 
 ---
 
