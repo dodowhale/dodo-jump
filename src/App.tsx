@@ -1,6 +1,7 @@
 import { onMount, createSignal, Show, onCleanup, For, createEffect } from 'solid-js';
 import { Game, type GameState, CHARACTERS } from './game/Game';
 import { audio } from './game/AudioEngine';
+import packageInfo from '../package.json';
 
 interface LeaderboardEntry {
     name: string;
@@ -71,14 +72,20 @@ const App = () => {
             if (res.ok) {
                 const data = await res.json();
                 setLeaderboard(data);
+                localStorage.setItem('lumina_leaderboard_backup', JSON.stringify(data));
             } else {
                 throw new Error("Server response failed");
             }
         } catch (e) {
             console.warn('Leaderboard fetch failed (offline mode):', e);
-            setLeaderboard([
-                { name: userName() || "YOU", score: highScore() }
-            ]);
+            const backup = localStorage.getItem('lumina_leaderboard_backup');
+            if (backup) {
+                setLeaderboard(JSON.parse(backup));
+            } else {
+                setLeaderboard([
+                    { name: userName() || "YOU", score: highScore() }
+                ]);
+            }
         }
     };
 
@@ -96,16 +103,44 @@ const App = () => {
             });
             if (res.ok) {
                 setHasSubmitted(true);
-                await fetchLeaderboard();
+                const data = await res.json();
+                if (data.leaderboard) {
+                    setLeaderboard(data.leaderboard);
+                    localStorage.setItem('lumina_leaderboard_backup', JSON.stringify(data.leaderboard));
+                } else {
+                    await fetchLeaderboard();
+                }
             } else {
                 throw new Error("Server rejection");
             }
         } catch (e) {
             console.warn('Score submission failed (offline fallback):', e);
             setHasSubmitted(true);
-            setLeaderboard([
-                { name: userName().toUpperCase().slice(0, 8), score: score() }
-            ]);
+            
+            let currentLeaderboard: LeaderboardEntry[] = [];
+            const backup = localStorage.getItem('lumina_leaderboard_backup');
+            if (backup) {
+                try {
+                    currentLeaderboard = JSON.parse(backup);
+                } catch (_) {}
+            }
+            if (currentLeaderboard.length === 0) {
+                currentLeaderboard = [
+                    { name: "NEON", score: 15 },
+                    { name: "NOVA", score: 10 },
+                    { name: "COSMO", score: 8 },
+                    { name: "JUMP", score: 5 },
+                    { name: "AURA", score: 3 }
+                ];
+            }
+            
+            // Add user score
+            currentLeaderboard.push({ name: userName().toUpperCase().slice(0, 8), score: score() });
+            currentLeaderboard.sort((a, b) => b.score - a.score);
+            currentLeaderboard = currentLeaderboard.slice(0, 5); // Top 5
+            
+            setLeaderboard(currentLeaderboard);
+            localStorage.setItem('lumina_leaderboard_backup', JSON.stringify(currentLeaderboard));
         } finally {
             setIsSubmitting(false);
         }
@@ -234,7 +269,7 @@ const App = () => {
             {/* Ambient blur lights */}
             <div class="ambient-glow" />
 
-            <div style={{ 
+            <div id="game-container" style={{ 
                 position: 'absolute', 
                 top: '50%',
                 left: '50%',
@@ -1002,6 +1037,21 @@ const App = () => {
 
                 {/* Canvas Drawing Layer */}
                 <canvas ref={canvasRef} width="480" height="720" style={{ display: 'block', width: '100%', height: '100%' }} />
+
+                {/* Game Version Display */}
+                <div style={{
+                    position: 'absolute',
+                    bottom: '8px',
+                    right: '12px',
+                    'font-size': '10px',
+                    'font-weight': '600',
+                    'color': 'rgba(255, 255, 255, 0.35)',
+                    'pointer-events': 'none',
+                    'z-index': 18,
+                    'letter-spacing': '0.5px'
+                }}>
+                    v{packageInfo.version}
+                </div>
             </div>
             
             <style>{`

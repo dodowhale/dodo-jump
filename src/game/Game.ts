@@ -278,6 +278,26 @@ export class Game {
             if (this.state !== 'PLAYING') return;
             if (this.player.isCharging || this.player.vy !== 0) return;
 
+            // Prevent game input when clicking buttons or typing in input fields
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement) {
+                return;
+            }
+
+            // Prevent game input when clicking SolidJS game UI elements inside the game container
+            if (!(e instanceof KeyboardEvent)) {
+                const target = e.target as HTMLElement;
+                const container = document.getElementById('game-container');
+                if (container) {
+                    if (container.contains(target) && target !== this.canvas) {
+                        return;
+                    }
+                } else {
+                    if (target !== this.canvas) {
+                        return;
+                    }
+                }
+            }
+
             if (e.type === 'touchstart' || e.type === 'mousedown' || (e as KeyboardEvent).key === ' ' || (e as KeyboardEvent).code === 'Space') {
                 if (e.cancelable) e.preventDefault();
                 
@@ -293,6 +313,26 @@ export class Game {
         const handleEnd = (e: Event) => {
             if (this.state !== 'PLAYING') return;
             if (!this.player.isCharging) return;
+
+            // Prevent game input when clicking buttons or typing in input fields
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement) {
+                return;
+            }
+
+            // Prevent game input when clicking SolidJS game UI elements inside the game container
+            if (!(e instanceof KeyboardEvent)) {
+                const target = e.target as HTMLElement;
+                const container = document.getElementById('game-container');
+                if (container) {
+                    if (container.contains(target) && target !== this.canvas) {
+                        return;
+                    }
+                } else {
+                    if (target !== this.canvas) {
+                        return;
+                    }
+                }
+            }
 
             if (e.type === 'touchend' || e.type === 'mouseup' || (e as KeyboardEvent).key === ' ' || (e as KeyboardEvent).code === 'Space') {
                 if (e.cancelable) e.preventDefault();
@@ -315,10 +355,10 @@ export class Game {
         window.addEventListener('keydown', handleKeyDown, { passive: false });
         window.addEventListener('keyup', handleEnd, { passive: false });
 
-        this.canvas.addEventListener('mousedown', handleStart);
+        window.addEventListener('mousedown', handleStart);
         window.addEventListener('mouseup', handleEnd);
 
-        this.canvas.addEventListener('touchstart', handleStart, { passive: false });
+        window.addEventListener('touchstart', handleStart, { passive: false });
         window.addEventListener('touchend', handleEnd, { passive: false });
     }
 
@@ -650,18 +690,25 @@ export class Game {
         // Platforms update
         this.platforms.forEach(plat => {
             if (plat.speed > 0) {
+                let targetX = 0;
+                let lerpSpeed = 4.0; // Default orbiting orbital follow speed
+                
                 // If Event Horizon active, pull platforms horizontally to center (X = 240)
                 if (this.eventHorizonTimer > 0) {
-                    const targetX = 240 - plat.width / 2;
-                    const pullFactor = 1 - Math.exp(-10 * dt);
-                    plat.x += (targetX - plat.x) * pullFactor; // Smooth slide to middle (frame-rate independent)
+                    targetX = 240 - plat.width / 2;
+                    lerpSpeed = 10.0; // Pull to center quickly
                 } else {
                     const timeFactor = (timestamp / 1000) * (plat.speed / 150) + plat.offset;
-                    plat.x = plat.originX + Math.sin(timeFactor) * plat.range;
-                    
-                    if (plat.x < 0) plat.x = 0;
-                    if (plat.x + plat.width > this.width) plat.x = this.width - plat.width;
+                    targetX = plat.originX + Math.sin(timeFactor) * plat.range;
                 }
+                
+                // Keep target in screen bounds
+                if (targetX < 0) targetX = 0;
+                if (targetX + plat.width > this.width) targetX = this.width - plat.width;
+                
+                // Smooth interpolation (frame-rate independent using dt)
+                const pullFactor = 1 - Math.exp(-lerpSpeed * dt);
+                plat.x += (targetX - plat.x) * pullFactor;
             }
 
             if (plat.type === 'phantom' && plat.steppedOn) {
@@ -849,7 +896,8 @@ export class Game {
             const platTop = plat.y + plat.height / 2;
             
             // CCD (Continuous Collision Detection): Checks if player's bottom edge crossed platform top edge this frame.
-            if (prevPlayerBottom >= platTop - 2 && currentPlayerBottom <= platTop + 2) {
+            // Using slightly wider buffer (5px) to prevent tunnel-through on fast frame skips or high falls.
+            if (prevPlayerBottom >= platTop - 5 && currentPlayerBottom <= platTop + 5) {
                 if (px + r >= plat.x && px - r <= plat.x + plat.width) {
                     this.landOnPlatform(plat);
                     break;
