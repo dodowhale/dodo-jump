@@ -865,9 +865,9 @@ export class Game {
         
         // Land on platform gives crystals, Fever gives double!
         const multiplier = this.feverTimer > 0 ? 2 : 1;
-        const currentCoins = Number(localStorage.getItem('flappy-candy-coins') || 0);
+        const currentCoins = Number(localStorage.getItem('lumina_crystals') || 0);
         const newCoins = currentCoins + 1 * multiplier;
-        localStorage.setItem('flappy-candy-coins', String(newCoins));
+        localStorage.setItem('lumina_crystals', String(newCoins));
         
         this.onCoinsChange(newCoins);
 

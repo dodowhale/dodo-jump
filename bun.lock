@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "dodo-jump",
+      "name": "lumina-jump",
       "dependencies": {
         "hono": "^4.12.27",
         "solid-js": "^1.9.13",

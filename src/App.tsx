@@ -23,9 +23,19 @@ const App = () => {
     const [hasSubmitted, setHasSubmitted] = createSignal(false);
 
     // Coins / Space Crystals
-    const [coins, setCoins] = createSignal(
-        Number(localStorage.getItem('flappy-candy-coins') || 0)
-    );
+    const getInitialCoins = () => {
+        let stored = localStorage.getItem('lumina_crystals');
+        if (stored === null) {
+            const legacy = localStorage.getItem('flappy-candy-coins');
+            if (legacy !== null) {
+                localStorage.setItem('lumina_crystals', legacy);
+                stored = legacy;
+            }
+        }
+        return Number(stored || 0);
+    };
+
+    const [coins, setCoins] = createSignal(getInitialCoins());
     const [activeCharacter, setActiveCharacter] = createSignal(
         localStorage.getItem('lumina_active_character') || 'neon_orb'
     );
@@ -66,6 +76,42 @@ const App = () => {
         return score() > (leaderboard()[leaderboard().length - 1]?.score || 0);
     };
 
+    const syncOfflineScore = async (serverLeaderboard: LeaderboardEntry[]) => {
+        const localHigh = Number(localStorage.getItem('lumina_high_score') || 0);
+        const name = localStorage.getItem('lumina_user_name');
+        if (localHigh === 0 || !name) return;
+
+        // Check if our high score with our name is already on the server leaderboard
+        const alreadyExists = serverLeaderboard.some(
+            entry => entry.name === name && entry.score === localHigh
+        );
+
+        if (!alreadyExists) {
+            // Check if high score qualifies for top 5
+            const isEntryEligible = serverLeaderboard.length < 5 || localHigh > (serverLeaderboard[serverLeaderboard.length - 1]?.score || 0);
+            
+            if (isEntryEligible) {
+                console.log('Syncing offline high score to server:', name, localHigh);
+                try {
+                    const res = await fetch('/api/leaderboard', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, score: localHigh })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.leaderboard) {
+                            setLeaderboard(data.leaderboard);
+                            localStorage.setItem('lumina_leaderboard_backup', JSON.stringify(data.leaderboard));
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to sync offline score to server:', e);
+                }
+            }
+        }
+    };
+
     const fetchLeaderboard = async () => {
         try {
             const res = await fetch('/api/leaderboard');
@@ -73,6 +119,7 @@ const App = () => {
                 const data = await res.json();
                 setLeaderboard(data);
                 localStorage.setItem('lumina_leaderboard_backup', JSON.stringify(data));
+                await syncOfflineScore(data);
             } else {
                 throw new Error("Server response failed");
             }
@@ -158,7 +205,7 @@ const App = () => {
                 
                 const newCoins = coins() - price;
                 setCoins(newCoins);
-                localStorage.setItem('flappy-candy-coins', String(newCoins));
+                localStorage.setItem('lumina_crystals', String(newCoins));
                 
                 setActiveCharacter(charId);
                 localStorage.setItem('lumina_active_character', charId);
