@@ -63,10 +63,26 @@ const App = () => {
     const updateScale = () => {
         const w = window.innerWidth;
         const h = window.innerHeight;
-        // Game dimensions 480x720 + border thickness (8px * 2) = 496x736
-        const scaleX = (w - 24) / 496;
-        const scaleY = (h - 24) / 736;
-        const fitScale = Math.min(1.0, Math.min(scaleX, scaleY));
+        
+        // 560px 미만 너비 또는 800px 미만 높이는 작은 화면(모바일)로 정의
+        const isSmallScreen = w < 560 || h < 800;
+        
+        // 작은 화면은 여백 최소화(상하좌우 12px씩, 총 24px), 큰 화면(태블릿/PC)은 넉넉하게 적용(상하좌우 40px씩, 총 80px)
+        const padding = isSmallScreen ? 24 : 80;
+        
+        // Game dimensions 480x720 + border thickness = 496x736
+        const scaleX = (w - padding) / 496;
+        const scaleY = (h - padding) / 736;
+        
+        let fitScale = Math.min(scaleX, scaleY);
+        
+        // 큰 화면에서 너무 거대해지는 것을 예방하기 위한 최대 스케일 제한 (모바일 최대 1.1배, 태블릿/PC 최대 1.4배)
+        const maxScale = isSmallScreen ? 1.1 : 1.4;
+        fitScale = Math.min(maxScale, fitScale);
+        
+        // 비정상적으로 뷰포트가 작을 때 깨지지 않도록 하는 최소 스케일
+        fitScale = Math.max(0.3, fitScale);
+        
         setScale(fitScale);
     };
 
